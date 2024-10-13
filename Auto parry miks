@@ -1,0 +1,51 @@
+-- Variables principales
+local autoParryEnabled = false
+
+-- Crear la interfaz gráfica (GUI)
+local ScreenGui = Instance.new("ScreenGui")
+local ToggleButton = Instance.new("TextButton")
+
+-- Configuración de la interfaz
+ScreenGui.Name = "AutoParryGUI"
+ScreenGui.Parent = game.CoreGui
+
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Parent = ScreenGui
+ToggleButton.Text = "Auto Parry OFF"
+ToggleButton.Size = UDim2.new(0, 200, 0, 50)
+ToggleButton.Position = UDim2.new(0, 50, 0, 50)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Font = Enum.Font.SourceSans
+ToggleButton.TextSize = 24
+
+-- Función para activar/desactivar el auto-parry
+ToggleButton.MouseButton1Click:Connect(function()
+    autoParryEnabled = not autoParryEnabled
+    if autoParryEnabled then
+        ToggleButton.Text = "Auto Parry ON"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        ToggleButton.Text = "Auto Parry OFF"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    end
+end)
+
+-- Función de auto-parry
+local function autoParry()
+    while true do
+        wait(0.1)  -- Intervalo de revisión
+        if autoParryEnabled then
+            -- Detecta si una pelota está cerca
+            for _, ball in pairs(game.Workspace:GetChildren()) do
+                if ball.Name == "BladeBall" and (ball.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude < 20 then
+                    -- Ejecutar el parry
+                    game:GetService("ReplicatedStorage").Events.Parry:FireServer(ball)
+                end
+            end
+        end
+    end
+end
+
+-- Ejecutar el auto-parry en segundo plano
+spawn(autoParry)
