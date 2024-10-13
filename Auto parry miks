@@ -1,42 +1,59 @@
--- Variables para activar/desactivar el auto-parry
+-- Variables principales
 local autoParryEnabled = false
-local distanceToParry = 10 -- Distancia mínima para hacer parry (ajustable)
+local proximityThreshold = 10 -- Distancia de detección de la bola
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
 
--- Botón para activar/desactivar el auto-parry
-local UserInputService = game:GetService("UserInputService")
+-- Crear botón para encender/apagar el auto-parry
+local UIS = game:GetService("UserInputService")
+local screenGui = Instance.new("ScreenGui")
+local toggleButton = Instance.new("TextButton")
 
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.P then -- P para activar/desactivar
-        autoParryEnabled = not autoParryEnabled
-        print("Auto-Parry " .. (autoParryEnabled and "Activado" or "Desactivado"))
-    end
-end)
+screenGui.Parent = game.CoreGui
+toggleButton.Parent = screenGui
+toggleButton.Text = "Auto-Parry: OFF"
+toggleButton.Size = UDim2.new(0, 200, 0, 50)
+toggleButton.Position = UDim2.new(0.5, -100, 0.9, -25)
+toggleButton.BackgroundColor3 = Color3.new(1, 0, 0)
 
--- Función para detectar la bola y hacer parry
-local function checkForBall()
-    while true do
-        if autoParryEnabled then
-            local player = game.Players.LocalPlayer
-            local character = player.Character
-            if character then
-                local ball = game.Workspace:FindFirstChild("Ball") -- Asegúrate que la bola se llame "Ball"
-                
-                if ball then
-                    local ballPosition = ball.Position
-                    local playerPosition = character.HumanoidRootPart.Position
-                    local distance = (ballPosition - playerPosition).Magnitude
-
-                    if distance <= distanceToParry then
-                        -- Ejecuta el parry
-                        fireproximityprompt(character:FindFirstChild("ParryPrompt")) -- Asegúrate que el prompt para parry esté bien identificado
-                        print("Parry activado!")
-                    end
-                end
+-- Función para detectar si la bola está cerca
+local function isBallNearby()
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj:IsA("Part") and obj.Name == "Ball" then
+            local distance = (obj.Position - rootPart.Position).Magnitude
+            if distance <= proximityThreshold then
+                return true
             end
         end
-        wait(0.1) -- Revisa cada 0.1 segundos
+    end
+    return false
+end
+
+-- Función de auto-parry
+local function autoParry()
+    if autoParryEnabled and isBallNearby() then
+        humanoid:MoveTo(rootPart.Position + Vector3.new(0, 0, 1)) -- Acción simulada de "parry"
     end
 end
 
--- Iniciar el auto-parry
-spawn(checkForBall)
+-- Activar/desactivar auto-parry
+toggleButton.MouseButton1Click:Connect(function()
+    autoParryEnabled = not autoParryEnabled
+    if autoParryEnabled then
+        toggleButton.Text = "Auto-Parry: ON"
+        toggleButton.BackgroundColor3 = Color3.new(0, 1, 0)
+    else
+        toggleButton.Text = "Auto-Parry: OFF"
+        toggleButton.BackgroundColor3 = Color3.new(1, 0, 0)
+    end
+end)
+
+-- Loop para verificar la proximidad de la bola
+while true do
+    if autoParryEnabled then
+        autoParry()
+    end
+    wait(0.1) -- Control de intervalo para no sobrecargar el script
+end
