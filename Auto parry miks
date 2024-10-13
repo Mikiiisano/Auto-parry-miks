@@ -1,51 +1,42 @@
--- Variables principales
+-- Variables para activar/desactivar el auto-parry
 local autoParryEnabled = false
+local distanceToParry = 10 -- Distancia mínima para hacer parry (ajustable)
 
--- Crear la interfaz gráfica (GUI)
-local ScreenGui = Instance.new("ScreenGui")
-local ToggleButton = Instance.new("TextButton")
+-- Botón para activar/desactivar el auto-parry
+local UserInputService = game:GetService("UserInputService")
 
--- Configuración de la interfaz
-ScreenGui.Name = "AutoParryGUI"
-ScreenGui.Parent = game.CoreGui
-
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Parent = ScreenGui
-ToggleButton.Text = "Auto Parry OFF"
-ToggleButton.Size = UDim2.new(0, 200, 0, 50)
-ToggleButton.Position = UDim2.new(0, 50, 0, 50)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.Font = Enum.Font.SourceSans
-ToggleButton.TextSize = 24
-
--- Función para activar/desactivar el auto-parry
-ToggleButton.MouseButton1Click:Connect(function()
-    autoParryEnabled = not autoParryEnabled
-    if autoParryEnabled then
-        ToggleButton.Text = "Auto Parry ON"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    else
-        ToggleButton.Text = "Auto Parry OFF"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.P then -- P para activar/desactivar
+        autoParryEnabled = not autoParryEnabled
+        print("Auto-Parry " .. (autoParryEnabled and "Activado" or "Desactivado"))
     end
 end)
 
--- Función de auto-parry
-local function autoParry()
+-- Función para detectar la bola y hacer parry
+local function checkForBall()
     while true do
-        wait(0.1)  -- Intervalo de revisión
         if autoParryEnabled then
-            -- Detecta si una pelota está cerca
-            for _, ball in pairs(game.Workspace:GetChildren()) do
-                if ball.Name == "BladeBall" and (ball.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).magnitude < 20 then
-                    -- Ejecutar el parry
-                    game:GetService("ReplicatedStorage").Events.Parry:FireServer(ball)
+            local player = game.Players.LocalPlayer
+            local character = player.Character
+            if character then
+                local ball = game.Workspace:FindFirstChild("Ball") -- Asegúrate que la bola se llame "Ball"
+                
+                if ball then
+                    local ballPosition = ball.Position
+                    local playerPosition = character.HumanoidRootPart.Position
+                    local distance = (ballPosition - playerPosition).Magnitude
+
+                    if distance <= distanceToParry then
+                        -- Ejecuta el parry
+                        fireproximityprompt(character:FindFirstChild("ParryPrompt")) -- Asegúrate que el prompt para parry esté bien identificado
+                        print("Parry activado!")
+                    end
                 end
             end
         end
+        wait(0.1) -- Revisa cada 0.1 segundos
     end
 end
 
--- Ejecutar el auto-parry en segundo plano
-spawn(autoParry)
+-- Iniciar el auto-parry
+spawn(checkForBall)
